@@ -172,16 +172,14 @@ def load_xvg():															#DONE
 				sys.exit(1)
 		#check that each file has the same first column
 		if f_index == 0:
-			first_col = tmp_data[:,0]
+			data_op_upper_avg[:,0] = tmp_data[:,0]
+			data_op_lower_avg[:,0] = tmp_data[:,0]
 		else:
-			if not np.array_equal(tmp_data[:,0],first_col):
+			if not np.array_equal(tmp_data[:,0],data_op_upper_avg[:,0]):
 				print "\nError: the first column of file " + str(filename) + " is different than that of " + str(args.xvgfilenames[0]) + "."
 				sys.exit(1)
 		
 		#store data
-		if f_index == 0:
-			data_op_upper_avg[:,0] = tmp_data[:,0]
-			data_op_lower_avg[:,0] = tmp_data[:,0]
 		if args.membrane == "AM_zCter":
 			data_op_upper_avg[:, f_index + 1] = tmp_data[:,3]
 			data_op_upper_std[:, f_index] = tmp_data[:,6]
