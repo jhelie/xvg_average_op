@@ -13,59 +13,20 @@ import os.path
 # create parser
 #=========================================================================================
 version_nb = "0.0.1"
-parser = argparse.ArgumentParser(prog = 'xvg_average', usage='', add_help = False, formatter_class = argparse.RawDescriptionHelpFormatter, description =\
+parser = argparse.ArgumentParser(prog = 'xvg_average_op', usage='', add_help = False, formatter_class = argparse.RawDescriptionHelpFormatter, description =\
 '''
 **********************************************
 v''' + version_nb + '''
 author: Jean Helie (jean.helie@bioch.ox.ac.uk)
-git: https://github.com/jhelie/xvg_average
+git: https://github.com/jhelie/xvg_average_op
 **********************************************
 
 [ DESCRIPTION ]
  
-This script calculate the average of data contained in several xvg files.
+This script calculate the average of order param data contained in several xvg files.
 
-It also calculates the (unbiased) standard deviation.
-
-The legend associated to the columns are used to identify the columns that should
-be averaged together between the files.
-
-[ REQUIREMENTS ]
-
-The following python modules are needed :
- - numpy
- - scipy
-
-[ NOTES ]
-
-1. The xvg files need to have the same data columns (i.e. equal number of 
-   columns and names) but these columns need not be in the same order within each
-   file. Only the first data column must be identical in all xvg files.
-
-2. You can specify which symbols are used to identify lines which should be treated as
-   comments with the --comments option. Symbols should be comma separated with no space
-   nor quotation marks. For instance to add '!' as a comment identifier:
-    -> --comments @,#,!
- 
-3. Missing values (or values to be ignored) should be set to the string "nan" in your
-   xvg files - they will be ignored when calculating averages.
-   Once the average data has been calculated you can choose to ouput nan values as a
-   number so that basic programs (e.g. xmgrace) can read and plot them. By default this
-   is not the case and nan values are written as "nan".
-   
-   If you do choose to replace them remember that depending on the data you're working
-   with "0" might be information and not the best value to set your nan to.
-
-4. Weighted averaged can be calculated. The weight to associate to each xvg file must be
-   entered as a comment in each xvg file as follows (without the quotation mark):
-    '-> weight = weight_value'
-   
-   You must respect the number and position of spaces but note that the above syntax can
-   be precessed by any of the symbols defined by the --comments option.
-   
-   If the average is weighted (i.e. the sum of the weights is different than the number
-   of xvg files), standard deviation are not calculated.
-   
+It also calculates the (unbiased) standard deviation by using the Bienaymé formula
+to calculate the variance (http://en.wikipedia.org/wiki/Variance).
 
 [ USAGE ]
 
@@ -73,10 +34,8 @@ Option	      Default  	Description
 -----------------------------------------------------
 -f			: xvg file(s)
 -o		average	: name of outptut file
---skip		1	: only outputs every X lines of the averaged xvg
---smooth	1	: calculate rolling average
+--membrane			: 'AM_zCter','AM_zNter','SMa','SMz' or 'POPC'
 --comments	@,#	: lines starting with these characters will be considered as comment
---nan			: replace 'nan' values 
 
 Other options
 -----------------------------------------------------
@@ -87,12 +46,8 @@ Other options
 
 #options
 parser.add_argument('-f', nargs='+', dest='xvgfilenames', help=argparse.SUPPRESS, required=True)
-parser.add_argument('-o', nargs=1, dest='output_file', default=["average"], help=argparse.SUPPRESS)
-parser.add_argument('--skip', nargs=1, dest='nb_skipping', default=[1], type=int, help=argparse.SUPPRESS)
-parser.add_argument('--smooth', nargs=1, dest='nb_smoothing', default=[1], type=int, help=argparse.SUPPRESS)
+parser.add_argument('--membrane', dest='membrane', choices=['AM_zCter','AM_zNter','SMa','SMz'], default='not specified', help=argparse.SUPPRESS, required=True)
 parser.add_argument('--comments', nargs=1, dest='comments', default=['@,#'], help=argparse.SUPPRESS)
-parser.add_argument('--variance', dest='variance', action='store_true', help=argparse.SUPPRESS)
-parser.add_argument('--nan', nargs=1, dest='nan2num', default=["no"], help=argparse.SUPPRESS)
 
 #other options
 parser.add_argument('--version', action='version', version='%(prog)s v' + version_nb, help=argparse.SUPPRESS)
@@ -135,14 +90,6 @@ for f in args.xvgfilenames:
 	if not os.path.isfile(f):
 		print "Error: file " + str(f) + " not found."
 		sys.exit(1)
-
-if args.nb_skipping < 1:
-	print "Error: --skip must be greater than 0."
-	sys.exit(1)
-
-if args.nb_smoothing < 1:
-	print "Error: --smooth must be greater than 0."
-	sys.exit(1)
 
 if args.nan2num != "no":
 	try:
