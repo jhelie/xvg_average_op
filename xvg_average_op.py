@@ -25,16 +25,21 @@ git: https://github.com/jhelie/xvg_average_op
  
 This script calculate the average of order param data contained in several xvg files.
 
-It also calculates the (unbiased) standard deviation by using the Bienaymé formula
+It also calculates the (unbiased) standard deviation by using the Bienayme formula
 to calculate the variance (http://en.wikipedia.org/wiki/Variance).
+
+NB:
+the script may give out a warning 'return np.mean(x,axis)/factor', it's ok. it's just
+scipy warning us that there were only nans on a row, the result will be a nan as we
+expect (see this thread: https://github.com/scipy/scipy/issues/2898).
 
 [ USAGE ]
 
 Option	      Default  	Description                    
 -----------------------------------------------------
 -f			: xvg file(s)
--o		average	: name of outptut file
---membrane			: 'AM_zCter','AM_zNter','SMa','SMz' or 'POPC'
+-o		op_avg	: name of outptut file
+--membrane		: 'AM_zCter','AM_zNter','SMa','SMz' or 'POPC'
 --comments	@,#	: lines starting with these characters will be considered as comment
 
 Other options
@@ -46,7 +51,8 @@ Other options
 
 #options
 parser.add_argument('-f', nargs='+', dest='xvgfilenames', help=argparse.SUPPRESS, required=True)
-parser.add_argument('--membrane', dest='membrane', choices=['AM_zCter','AM_zNter','SMa','SMz'], default='not specified', help=argparse.SUPPRESS, required=True)
+parser.add_argument('-o', nargs=1, dest='output_file', default=["op_avg"], help=argparse.SUPPRESS)
+parser.add_argument('--membrane', dest='membrane', choices=['AM_zCter','AM_zNter','SMa','SMz','POPC'], default='not specified', help=argparse.SUPPRESS, required=True)
 parser.add_argument('--comments', nargs=1, dest='comments', default=['@,#'], help=argparse.SUPPRESS)
 
 #other options
@@ -59,10 +65,6 @@ parser.add_argument('-h','--help', action='help', help=argparse.SUPPRESS)
 
 args = parser.parse_args()
 args.output_file = args.output_file[0]
-args.nb_skipping = args.nb_skipping[0]
-args.nb_smoothing = args.nb_smoothing[0]
-args.nan2num = args.nan2num[0]
-
 args.comments = args.comments[0].split(',')
 
 #=========================================================================================
@@ -93,13 +95,6 @@ if len(args.xvgfilenames) == 1:
 for f in args.xvgfilenames:
 	if not os.path.isfile(f):
 		print "Error: file " + str(f) + " not found."
-		sys.exit(1)
-
-if args.nan2num != "no":
-	try:
-		args.nan2num = float(args.nan2num)
-	except:
-		print "Error: --nan should be set to a float value."
 		sys.exit(1)
 
 ##########################################################################################
@@ -172,7 +167,7 @@ def load_xvg():															#DONE
 		if f_index == 0:
 			nb_cols = np.shape(tmp_data)[1]
 		else:
-			if np.shape(files_columns[filename]["data"])[1] != nb_cols:
+			if np.shape(tmp_data)[1] != nb_cols:
 				print "Error: file " + str(filename) + " has " + str(np.shape(tmp_data)[1]) + " data columns, whereas file " + str(args.xvgfilenames[0]) + " has " + str(nb_cols) + " data columns."
 				sys.exit(1)
 		#check that each file has the same first column
@@ -187,13 +182,13 @@ def load_xvg():															#DONE
 		if f_index == 0:
 			data_op_upper_avg[:,0] = tmp_data[:,0]
 			data_op_lower_avg[:,0] = tmp_data[:,0]
-		
-		if args.membrane == "AM_zCter": #TO DO
+		if args.membrane == "AM_zCter":
 			data_op_upper_avg[:, f_index + 1] = tmp_data[:,3]
 			data_op_upper_std[:, f_index] = tmp_data[:,6]
-			data_op_lower_avg[:, f_index + 1] = tmp_data[:,10]
-			data_op_lower_std[:, f_index] = tmp_data[:,14]
-		
+			data_op_upper_nb[:, f_index] = tmp_data[:,9]
+			data_op_lower_avg[:, f_index + 1] = tmp_data[:,13]
+			data_op_lower_std[:, f_index] = tmp_data[:,17]
+			data_op_lower_nb[:, f_index] = tmp_data[:,21]
 		elif args.membrane == "AM_zNter":
 			data_op_upper_avg[:, f_index + 1] = tmp_data[:,15]
 			data_op_upper_std[:, f_index] = tmp_data[:,18]
@@ -201,25 +196,27 @@ def load_xvg():															#DONE
 			data_op_lower_avg[:, f_index + 1] = tmp_data[:,4]
 			data_op_lower_std[:, f_index] = tmp_data[:,8]
 			data_op_lower_nb[:, f_index] = tmp_data[:,12]
-		
-		elif args.membrane == "SMa": #TO DO
-			data_op_upper_avg[:, f_index + 1] = tmp_data[:,12]
-			data_op_upper_std[:, f_index] = tmp_data[:,16]
+		elif args.membrane == "SMa":
+			data_op_upper_avg[:, f_index + 1] = tmp_data[:,16]
+			data_op_upper_std[:, f_index] = tmp_data[:,20]
+			data_op_upper_nb[:, f_index] = tmp_data[:,24]
 			data_op_lower_avg[:, f_index + 1] = tmp_data[:,4]
 			data_op_lower_std[:, f_index] = tmp_data[:,8]
-		
-		elif args.membrane == "SMz": #TO DO
-			data_op_upper_avg[:, f_index + 1] = tmp_data[:,9]
-			data_op_upper_std[:, f_index] = tmp_data[:,12]
+			data_op_lower_nb[:, f_index] = tmp_data[:,12]
+		elif args.membrane == "SMz":
+			data_op_upper_avg[:, f_index + 1] = tmp_data[:,12]
+			data_op_upper_std[:, f_index] = tmp_data[:,15]
+			data_op_upper_nb[:, f_index] = tmp_data[:,18]
 			data_op_lower_avg[:, f_index + 1] = tmp_data[:,3]
 			data_op_lower_std[:, f_index] = tmp_data[:,6]
-		
-		elif args.membrane == "POPC": #TO DO
-			data_op_upper_avg[:, f_index + 1] = tmp_data[:,6]
+			data_op_lower_nb[:, f_index] = tmp_data[:,9]
+		elif args.membrane == "POPC":
+			data_op_upper_avg[:, f_index + 1] = tmp_data[:,8]
 			data_op_upper_std[:, f_index] = tmp_data[:,8]
+			data_op_upper_nb[:, f_index] = tmp_data[:,12]
 			data_op_lower_avg[:, f_index + 1] = tmp_data[:,2]
 			data_op_lower_std[:, f_index] = tmp_data[:,4]
-
+			data_op_lower_nb[:, f_index] = tmp_data[:,6]
 	return
 
 #=========================================================================================
@@ -245,15 +242,33 @@ def calculate_avg():													#DONE
 	#calculate weighted average taking into account "nan"
 	#----------------------------------------------------
 	avg_op_upper_avg[:,1] =  scipy.stats.nanmean(data_op_upper_avg[:,1:] * weights * len(args.xvgfilenames) / float(np.sum(weights)) , axis = 1)
-	avg_op_lower_avg[:,1] =  scipy.stats.nanmean(data_op_lower_avg[:,1:], axis = 1)
+	avg_op_lower_avg[:,1] =  scipy.stats.nanmean(data_op_lower_avg[:,1:] * weights * len(args.xvgfilenames) / float(np.sum(weights)) , axis = 1)
 
 	#calculate unbiased weighted std dev taking into account "nan"
 	#-------------------------------------------------------------
-	#from Bienaymé formula
+	#from Bienayme formula
 	# var(Xavg) = 1/(sum(wi))**2 * sum(wi**2 * var(Xi))
-	avg_op_upper_std[:,0] = np.sqrt(np.nansum(weights**2 * data_op_upper_std**2 * data_op_upper_nb, axis = 1) / float(np.sum(weights)**2 * np.sum(data_upper_nb , axis = 1) + len(args.xvgfilenames) - 1))
-	avg_op_lower_std[:,0] = np.sqrt(np.nansum(weights**2 * data_op_lower_std**2 * data_op_lower_nb, axis = 1) / float(np.sum(weights)**2 * np.sum(data_lower_nb , axis = 1) + len(args.xvgfilenames) - 1))
-
+		
+	#calculate total number of points
+	tmp_nb_total_upper = np.copy(data_op_upper_nb)
+	tmp_nb_total_upper[tmp_nb_total_upper != 0] += 1
+	tmp_nb_total_upper = np.sum(tmp_nb_total_upper, axis = 1)
+	tmp_nb_total_upper -= 1
+	tmp_nb_total_upper[tmp_nb_total_upper == 0] = 1
+	tmp_nb_total_upper[tmp_nb_total_upper == -1] = 1
+	
+	#calculate total number of points
+	tmp_nb_total_lower = np.copy(data_op_lower_nb)
+	tmp_nb_total_lower[tmp_nb_total_lower != 0] += 1
+	tmp_nb_total_lower = np.sum(tmp_nb_total_lower, axis = 1)
+	tmp_nb_total_lower -= 1
+	tmp_nb_total_lower[tmp_nb_total_lower == 0] = 1
+	tmp_nb_total_lower[tmp_nb_total_lower == -1] = 1
+	
+	#apply bienayme formula
+	avg_op_upper_std[:,0] = np.sqrt(np.nansum(weights**2 * data_op_upper_std**2 * data_op_upper_nb, axis = 1) / (np.sum(weights)**2 * tmp_nb_total_upper))
+	avg_op_lower_std[:,0] = np.sqrt(np.nansum(weights**2 * data_op_lower_std**2 * data_op_lower_nb, axis = 1) / (np.sum(weights)**2 * tmp_nb_total_lower))
+		
 	return
 
 #=========================================================================================
@@ -295,7 +310,7 @@ def write_xvg():														#DONE
 	#data
 	for r in range(0, nb_rows):
 		results = str(avg_op_upper_avg[r,0])
-		results += "	" + "{:.6e}".format(avg_op_upper_avg[r,1]) + "	" + "{:.6e}".format(avg_op_upper_std[r,0]) + "	" + "{:.6e}".format(avg_op_lower_avg[r,1]) + "	" + "{:.6e}".format(avg_op_upper_std[r,0])
+		results += "	" + "{:.6e}".format(avg_op_upper_avg[r,1]) + "	" + "{:.6e}".format(avg_op_upper_std[r,0]) + "	" + "{:.6e}".format(avg_op_lower_avg[r,1]) + "	" + "{:.6e}".format(avg_op_lower_std[r,0])
 		output_xvg.write(results + "\n")		
 	output_xvg.close()	
 	
