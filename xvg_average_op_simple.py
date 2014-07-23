@@ -198,8 +198,8 @@ def load_xvg():															#DONE
 			data_op_lower_avg[:, f_index + 1] = tmp_data[:,3]
 			data_op_lower_std[:, f_index] = tmp_data[:,6]
 		elif args.membrane == "POPC":
-			data_op_upper_avg[:, f_index + 1] = tmp_data[:,6]
-			data_op_upper_std[:, f_index] = tmp_data[:,8]
+			data_op_upper_avg[:, f_index + 1] = tmp_data[:,8]
+			data_op_upper_std[:, f_index] = tmp_data[:,10]
 			data_op_lower_avg[:, f_index + 1] = tmp_data[:,2]
 			data_op_lower_std[:, f_index] = tmp_data[:,4]
 
