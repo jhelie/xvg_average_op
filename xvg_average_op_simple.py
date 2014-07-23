@@ -154,10 +154,8 @@ def load_xvg():															#DONE
 			nb_rows = np.shape(tmp_data)[0]
 			data_op_upper_avg = np.zeros((nb_rows, len(args.xvgfilenames) + 1))			#distance, avg op upper for each file
 			data_op_upper_std = np.zeros((nb_rows, len(args.xvgfilenames)))				#std op upper for each file
-			data_op_upper_nb = np.zeros((nb_rows, len(args.xvgfilenames)))				#nb op upper for each file
 			data_op_lower_avg = np.zeros((nb_rows, len(args.xvgfilenames) + 1))			#distance, avg op upper for each file
 			data_op_lower_std = np.zeros((nb_rows, len(args.xvgfilenames)))				#std op upper for each file
-			data_op_lower_nb = np.zeros((nb_rows, len(args.xvgfilenames)))				#nb op upper for each file
 		else:
 			if np.shape(tmp_data)[0] != nb_rows:
 				print "Error: file " + str(filename) + " has " + str(np.shape(tmp_data)[0]) + " data rows, whereas file " + str(args.xvgfilenames[0]) + " has " + str(nb_rows) + " data rows."
@@ -182,38 +180,29 @@ def load_xvg():															#DONE
 		if args.membrane == "AM_zCter":
 			data_op_upper_avg[:, f_index + 1] = tmp_data[:,3]
 			data_op_upper_std[:, f_index] = tmp_data[:,6]
-			data_op_upper_nb[:, f_index] = tmp_data[:,9]
 			data_op_lower_avg[:, f_index + 1] = tmp_data[:,13]
 			data_op_lower_std[:, f_index] = tmp_data[:,17]
-			data_op_lower_nb[:, f_index] = tmp_data[:,21]
 		elif args.membrane == "AM_zNter":
 			data_op_upper_avg[:, f_index + 1] = tmp_data[:,15]
 			data_op_upper_std[:, f_index] = tmp_data[:,18]
-			data_op_upper_nb[:, f_index] = tmp_data[:,21]
 			data_op_lower_avg[:, f_index + 1] = tmp_data[:,4]
 			data_op_lower_std[:, f_index] = tmp_data[:,8]
-			data_op_lower_nb[:, f_index] = tmp_data[:,12]
 		elif args.membrane == "SMa":
 			data_op_upper_avg[:, f_index + 1] = tmp_data[:,16]
 			data_op_upper_std[:, f_index] = tmp_data[:,20]
-			data_op_upper_nb[:, f_index] = tmp_data[:,24]
 			data_op_lower_avg[:, f_index + 1] = tmp_data[:,4]
 			data_op_lower_std[:, f_index] = tmp_data[:,8]
-			data_op_lower_nb[:, f_index] = tmp_data[:,12]
 		elif args.membrane == "SMz":
 			data_op_upper_avg[:, f_index + 1] = tmp_data[:,12]
 			data_op_upper_std[:, f_index] = tmp_data[:,15]
-			data_op_upper_nb[:, f_index] = tmp_data[:,18]
 			data_op_lower_avg[:, f_index + 1] = tmp_data[:,3]
 			data_op_lower_std[:, f_index] = tmp_data[:,6]
-			data_op_lower_nb[:, f_index] = tmp_data[:,9]
 		elif args.membrane == "POPC":
 			data_op_upper_avg[:, f_index + 1] = tmp_data[:,8]
 			data_op_upper_std[:, f_index] = tmp_data[:,8]
-			data_op_upper_nb[:, f_index] = tmp_data[:,12]
 			data_op_lower_avg[:, f_index + 1] = tmp_data[:,2]
 			data_op_lower_std[:, f_index] = tmp_data[:,4]
-			data_op_lower_nb[:, f_index] = tmp_data[:,6]
+
 	return
 
 #=========================================================================================
@@ -238,31 +227,29 @@ def calculate_avg():													#DONE
 	avg_op_lower_avg = np.zeros((nb_rows, 2))
 	std_op_lower_avg = np.zeros((nb_rows, 1))
 	
-	avg_op_upper_std = np.zeros((nb_rows, 2))
+	avg_op_upper_std = np.zeros((nb_rows, 1))
 	std_op_upper_std = np.zeros((nb_rows, 1))
 	
-	avg_op_lower_std = np.zeros((nb_rows, 2))
+	avg_op_lower_std = np.zeros((nb_rows, 1))
 	std_op_lower_std = np.zeros((nb_rows, 1))
 
 	#distances
 	avg_op_upper_avg[:,0] = data_op_upper_avg[:,0]
 	avg_op_lower_avg[:,0] = data_op_lower_avg[:,0]
-	avg_op_upper_std[:,0] = data_op_upper_avg[:,0]
-	avg_op_lower_std[:,0] = data_op_lower_avg[:,0]
 
 	#calculate weighted average taking into account "nan"
 	#----------------------------------------------------
 	avg_op_upper_avg[:,1] =  scipy.stats.nanmean(data_op_upper_avg[:,1:] * weights * len(args.xvgfilenames) / float(np.sum(weights)) , axis = 1)
 	avg_op_lower_avg[:,1] =  scipy.stats.nanmean(data_op_lower_avg[:,1:] * weights * len(args.xvgfilenames) / float(np.sum(weights)) , axis = 1)
-
-	avg_op_upper_std[:,1] =  scipy.stats.nanmean(data_op_upper_std * weights * len(args.xvgfilenames) / float(np.sum(weights)) , axis = 1)
-	avg_op_lower_std[:,1] =  scipy.stats.nanmean(data_op_lower_std * weights * len(args.xvgfilenames) / float(np.sum(weights)) , axis = 1)
-
+	avg_op_upper_std[:,0] =  scipy.stats.nanmean(data_op_upper_std * weights * len(args.xvgfilenames) / float(np.sum(weights)) , axis = 1)
+	avg_op_lower_std[:,0] =  scipy.stats.nanmean(data_op_lower_std * weights * len(args.xvgfilenames) / float(np.sum(weights)) , axis = 1)
 
 	#calculate unbiased weighted std dev taking into account "nan"
 	#-------------------------------------------------------------
-	std_thick_avg[:,0] = np.sqrt(np.sum(weights) / float(np.sum(weights)**2 - np.sum(weights**2)) * np.nansum(weights * (data_thick_avg[:,1:] - avg_thick_avg[:,1:2])**2, axis = 1))	
-	std_thick_std[:,0] = np.sqrt(np.sum(weights) / float(np.sum(weights)**2 - np.sum(weights**2)) * np.nansum(weights * (data_thick_std - avg_thick_std)**2, axis = 1))
+	std_op_upper_avg[:,0] = np.sqrt(np.sum(weights) / float(np.sum(weights)**2 - np.sum(weights**2)) * np.nansum(weights * (data_op_upper_avg[:,1:] - avg_op_upper_avg[:,1:2])**2, axis = 1))	
+	std_op_lower_avg[:,0] = np.sqrt(np.sum(weights) / float(np.sum(weights)**2 - np.sum(weights**2)) * np.nansum(weights * (data_op_lower_avg[:,1:] - avg_op_lower_avg[:,1:2])**2, axis = 1))
+	std_op_upper_std[:,0] = np.sqrt(np.sum(weights) / float(np.sum(weights)**2 - np.sum(weights**2)) * np.nansum(weights * (data_op_upper_std - avg_op_upper_std)**2, axis = 1))
+	std_op_lower_std[:,0] = np.sqrt(np.sum(weights) / float(np.sum(weights)**2 - np.sum(weights**2)) * np.nansum(weights * (data_op_lower_std - avg_op_lower_std)**2, axis = 1))
 
 	return
 
@@ -277,7 +264,7 @@ def write_xvg():														#DONE
 	output_xvg = open(filename_xvg, 'w')
 	
 	#general header
-	output_xvg.write("# [average xvg - written by xvg_average_op v" + str(version_nb) + "]\n")
+	output_xvg.write("# [average xvg - written by xvg_average_op_simple v" + str(version_nb) + "]\n")
 	tmp_files = ""
 	for f in args.xvgfilenames:
 		tmp_files += "," + str(f)
@@ -296,16 +283,20 @@ def write_xvg():														#DONE
 	output_xvg.write("@ legend box on\n")
 	output_xvg.write("@ legend loctype view\n")
 	output_xvg.write("@ legend 0.98, 0.8\n")
-	output_xvg.write("@ legend length 4\n")
-	output_xvg.write("@ s0 legend \"upper (avg)\"\n")
-	output_xvg.write("@ s1 legend \"upper (std)\"\n")
-	output_xvg.write("@ s2 legend \"lower (avg)\"\n")
-	output_xvg.write("@ s3 legend \"lower (std)\"\n")
+	output_xvg.write("@ legend length 8\n")
+	output_xvg.write("@ s0 legend \"upper avg (avg)\"\n")
+	output_xvg.write("@ s1 legend \"upper avg (std)\"\n")
+	output_xvg.write("@ s2 legend \"lower avg (avg)\"\n")
+	output_xvg.write("@ s3 legend \"lower avg (std)\"\n")
+	output_xvg.write("@ s4 legend \"upper std (avg)\"\n")
+	output_xvg.write("@ s5 legend \"upper std (std)\"\n")
+	output_xvg.write("@ s6 legend \"lower std (avg)\"\n")
+	output_xvg.write("@ s7 legend \"lower std (std)\"\n")
 	
 	#data
 	for r in range(0, nb_rows):
 		results = str(avg_op_upper_avg[r,0])
-		results += "	" + "{:.6e}".format(avg_op_upper_avg[r,1]) + "	" + "{:.6e}".format(avg_op_upper_std[r,0]) + "	" + "{:.6e}".format(avg_op_lower_avg[r,1]) + "	" + "{:.6e}".format(avg_op_lower_std[r,0])
+		results += "	" + "{:.6e}".format(avg_op_upper_avg[r,1]) + "	" + "{:.6e}".format(std_op_upper_avg[r,0]) + "	" + "{:.6e}".format(avg_op_lower_avg[r,1]) + "	" + "{:.6e}".format(std_op_lower_avg[r,0]) + "	" + "{:.6e}".format(avg_op_upper_std[r,0]) + "	" + "{:.6e}".format(std_op_upper_std[r,0]) + "	" + "{:.6e}".format(avg_op_lower_std[r,0]) + "	" + "{:.6e}".format(std_op_lower_std[r,0])
 		output_xvg.write(results + "\n")		
 	output_xvg.close()	
 	
