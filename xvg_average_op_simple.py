@@ -312,10 +312,10 @@ def calculate_avg():													#DONE
 	tmp_lower_avg[:,0] = np.nansum(weights * (data_op_lower_avg[:,1:] - avg_op_lower_avg[:,1:2])**2, axis = 1)
 	tmp_upper_std[:,0] = np.nansum(weights * (data_op_upper_std - avg_op_upper_std)**2, axis = 1)
 	tmp_lower_std[:,0] = np.nansum(weights * (data_op_lower_std - avg_op_lower_std)**2, axis = 1)
-	std_op_upper_avg = np.sqrt(np.sum(weights) / float(np.sum(weights)**2 - np.sum(weights**2)) * tmp_upper_avg)	
-	std_op_lower_avg = np.sqrt(np.sum(weights) / float(np.sum(weights)**2 - np.sum(weights**2)) * tmp_lower_avg)
-	std_op_upper_std = np.sqrt(np.sum(weights) / float(np.sum(weights)**2 - np.sum(weights**2)) * tmp_upper_std)
-	std_op_lower_std = np.sqrt(np.sum(weights) / float(np.sum(weights)**2 - np.sum(weights**2)) * tmp_lower_std)
+	std_op_upper_avg = np.sqrt(weights_upper_nan_avg / (weights_upper_nan_avg)**2 - weights_upper_nan_avg_sq) * tmp_upper_avg)	
+	std_op_lower_avg = np.sqrt(weights_lower_nan_avg / (weights_lower_nan_avg)**2 - weights_lower_nan_avg_sq) * tmp_lower_avg)	
+	std_op_upper_std = np.sqrt(weights_upper_nan_std / (weights_upper_nan_std)**2 - weights_upper_nan_std_sq) * tmp_upper_std)	
+	std_op_lower_std = np.sqrt(weights_lower_nan_std / (weights_lower_nan_std)**2 - weights_lower_nan_std_sq) * tmp_lower_std)	
 
 	return
 
