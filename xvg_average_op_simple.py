@@ -198,7 +198,7 @@ def load_xvg():															#DONE
 			data_op_lower_avg[:, f_index + 1] = tmp_data[:,3]
 			data_op_lower_std[:, f_index] = tmp_data[:,6]
 		elif args.membrane == "POPC":
-			data_op_upper_avg[:, f_index + 1] = tmp_data[:,8]
+			data_op_upper_avg[:, f_index + 1] = tmp_data[:,6]
 			data_op_upper_std[:, f_index] = tmp_data[:,8]
 			data_op_lower_avg[:, f_index + 1] = tmp_data[:,2]
 			data_op_lower_std[:, f_index] = tmp_data[:,4]
@@ -237,19 +237,85 @@ def calculate_avg():													#DONE
 	avg_op_upper_avg[:,0] = data_op_upper_avg[:,0]
 	avg_op_lower_avg[:,0] = data_op_lower_avg[:,0]
 
+	#remove nan values of the weights for average values
+	weights_upper_nan_avg = np.zeros((nb_rows, 1))	
+	weights_upper_nan_avg_sq = np.zeros((nb_rows, 1))	
+	nb_files_upper_avg = np.ones((nb_rows, 1)) * len(args.xvgfilenames)
+	tmp_weights_nan = np.zeros((nb_rows, len(args.xvgfilenames)))
+	for r in range(0, nb_rows):
+		tmp_weights_nan[r,:] = weights
+		for f_index in range(0, len(args.xvgfilenames)):
+			if np.isnan(data_op_upper_avg[r,f_index + 1]):
+				tmp_weights_nan[r,f_index] = 0
+				nb_files_upper_avg[r,0] -= 1
+	weights_upper_nan_avg[:,0] = np.nansum(tmp_weights_nan, axis = 1)
+	weights_upper_nan_avg_sq[:,0] = np.nansum(tmp_weights_nan**2, axis = 1)	
+	weights_upper_nan_avg[weights_upper_nan_avg == 0] = 1
+	
+	weights_lower_nan_avg = np.zeros((nb_rows, 1))	
+	weights_lower_nan_avg_sq = np.zeros((nb_rows, 1))	
+	nb_files_lower_avg = np.ones((nb_rows, 1)) * len(args.xvgfilenames)
+	tmp_weights_nan = np.zeros((nb_rows, len(args.xvgfilenames)))
+	for r in range(0, nb_rows):
+		tmp_weights_nan[r,:] = weights
+		for f_index in range(0, len(args.xvgfilenames)):
+			if np.isnan(data_op_lower_avg[r,f_index + 1]):
+				tmp_weights_nan[r,f_index] = 0
+				nb_files_lower_avg[r,0] -= 1
+	weights_lower_nan_avg[:,0] = np.nansum(tmp_weights_nan, axis = 1)
+	weights_lower_nan_avg_sq[:,0] = np.nansum(tmp_weights_nan**2, axis = 1)	
+	weights_lower_nan_avg[weights_lower_nan_avg == 0] = 1
+
+	#remove nan values of the weights for std dev values
+	weights_upper_nan_std = np.zeros((nb_rows, 1))	
+	weights_upper_nan_std_sq = np.zeros((nb_rows, 1))	
+	nb_files_upper_std = np.ones((nb_rows, 1)) * len(args.xvgfilenames)
+	tmp_weights_nan = np.zeros((nb_rows, len(args.xvgfilenames)))
+	for r in range(0, nb_rows):
+		tmp_weights_nan[r,:] = weights
+		for f_index in range(0, len(args.xvgfilenames)):
+			if np.isnan(data_op_upper_std[r,f_index]):
+				tmp_weights_nan[r,f_index] = 0
+				nb_files_upper_std[r,0] -= 1
+	weights_upper_nan_std[:,0] = np.nansum(tmp_weights_nan, axis = 1)
+	weights_upper_nan_std_sq[:,0] = np.nansum(tmp_weights_nan**2, axis = 1)	
+	weights_upper_nan_std[weights_upper_nan_std == 0] = 1
+
+	weights_lower_nan_std = np.zeros((nb_rows, 1))	
+	weights_lower_nan_std_sq = np.zeros((nb_rows, 1))	
+	nb_files_lower_std = np.ones((nb_rows, 1)) * len(args.xvgfilenames)
+	tmp_weights_nan = np.zeros((nb_rows, len(args.xvgfilenames)))
+	for r in range(0, nb_rows):
+		tmp_weights_nan[r,:] = weights
+		for f_index in range(0, len(args.xvgfilenames)):
+			if np.isnan(data_op_lower_std[r,f_index]):
+				tmp_weights_nan[r,f_index] = 0
+				nb_files_lower_std[r,0] -= 1
+	weights_lower_nan_std[:,0] = np.nansum(tmp_weights_nan, axis = 1)
+	weights_lower_nan_std_sq[:,0] = np.nansum(tmp_weights_nan**2, axis = 1)	
+	weights_lower_nan_std[weights_lower_nan_std == 0] = 1
+
 	#calculate weighted average taking into account "nan"
 	#----------------------------------------------------
-	avg_op_upper_avg[:,1] =  scipy.stats.nanmean(data_op_upper_avg[:,1:] * weights * len(args.xvgfilenames) / float(np.sum(weights)) , axis = 1)
-	avg_op_lower_avg[:,1] =  scipy.stats.nanmean(data_op_lower_avg[:,1:] * weights * len(args.xvgfilenames) / float(np.sum(weights)) , axis = 1)
-	avg_op_upper_std[:,0] =  scipy.stats.nanmean(data_op_upper_std * weights * len(args.xvgfilenames) / float(np.sum(weights)) , axis = 1)
-	avg_op_lower_std[:,0] =  scipy.stats.nanmean(data_op_lower_std * weights * len(args.xvgfilenames) / float(np.sum(weights)) , axis = 1)
+	avg_op_upper_avg[:,1] =  scipy.stats.nanmean(data_op_upper_avg[:,1:] * weights * nb_files_upper_avg / weights_upper_nan_avg, axis = 1)
+	avg_op_lower_avg[:,1] =  scipy.stats.nanmean(data_op_lower_avg[:,1:] * weights * nb_files_lower_avg / weights_lower_nan_avg, axis = 1)
+	avg_op_upper_std[:,0] =  scipy.stats.nanmean(data_op_upper_std * weights * nb_files_upper_std / weights_upper_nan_std, axis = 1)
+	avg_op_lower_std[:,0] =  scipy.stats.nanmean(data_op_lower_std * weights * nb_files_lower_std / weights_lower_nan_avg, axis = 1)
 
 	#calculate unbiased weighted std dev taking into account "nan"
 	#-------------------------------------------------------------
-	std_op_upper_avg[:,0] = np.sqrt(np.sum(weights) / float(np.sum(weights)**2 - np.sum(weights**2)) * np.nansum(weights * (data_op_upper_avg[:,1:] - avg_op_upper_avg[:,1:2])**2, axis = 1))	
-	std_op_lower_avg[:,0] = np.sqrt(np.sum(weights) / float(np.sum(weights)**2 - np.sum(weights**2)) * np.nansum(weights * (data_op_lower_avg[:,1:] - avg_op_lower_avg[:,1:2])**2, axis = 1))
-	std_op_upper_std[:,0] = np.sqrt(np.sum(weights) / float(np.sum(weights)**2 - np.sum(weights**2)) * np.nansum(weights * (data_op_upper_std - avg_op_upper_std)**2, axis = 1))
-	std_op_lower_std[:,0] = np.sqrt(np.sum(weights) / float(np.sum(weights)**2 - np.sum(weights**2)) * np.nansum(weights * (data_op_lower_std - avg_op_lower_std)**2, axis = 1))
+	tmp_upper_avg = np.zeros((nb_rows, 1))
+	tmp_lower_avg = np.zeros((nb_rows, 1))
+	tmp_upper_std = np.zeros((nb_rows, 1))
+	tmp_lower_std = np.zeros((nb_rows, 1))
+	tmp_upper_avg[:,0] = np.nansum(weights * (data_op_upper_avg[:,1:] - avg_op_upper_avg[:,1:2])**2, axis = 1)
+	tmp_lower_avg[:,0] = np.nansum(weights * (data_op_lower_avg[:,1:] - avg_op_lower_avg[:,1:2])**2, axis = 1)
+	tmp_upper_std[:,0] = np.nansum(weights * (data_op_upper_std - avg_op_upper_std)**2, axis = 1)
+	tmp_lower_std[:,0] = np.nansum(weights * (data_op_lower_std - avg_op_lower_std)**2, axis = 1)
+	std_op_upper_avg = np.sqrt(np.sum(weights) / float(np.sum(weights)**2 - np.sum(weights**2)) * tmp_upper_avg)	
+	std_op_lower_avg = np.sqrt(np.sum(weights) / float(np.sum(weights)**2 - np.sum(weights**2)) * tmp_lower_avg)
+	std_op_upper_std = np.sqrt(np.sum(weights) / float(np.sum(weights)**2 - np.sum(weights**2)) * tmp_upper_std)
+	std_op_lower_std = np.sqrt(np.sum(weights) / float(np.sum(weights)**2 - np.sum(weights**2)) * tmp_lower_std)
 
 	return
 
